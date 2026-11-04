@@ -21,6 +21,8 @@ constexpr uint32_t EXPIRY_MARGIN_S = 60;
 String accessToken;
 uint32_t accessTokenExpiresAtMs = 0;  // millis() deadline, valid for this boot
 bool triedStoredAccessToken = false;
+bool interactiveLogin = false;
+bool loginNeeded = false;
 
 enum class TokenResult { Ok, Pending, SlowDown, InvalidGrant, Failed };
 
@@ -204,6 +206,18 @@ String overlayPath() {
 
 namespace Tado {
 
+void setInteractiveLogin(bool allowed) {
+    interactiveLogin = allowed;
+}
+
+bool loginPossible() {
+    return interactiveLogin || Storage::loadRefreshToken().length() > 0;
+}
+
+bool loginRequired() {
+    return loginNeeded || !loginPossible();
+}
+
 bool ensureAuthenticated() {
     if (accessTokenValid()) return true;
 
@@ -214,11 +228,21 @@ bool ensureAuthenticated() {
 
     switch (refreshWithStoredToken()) {
         case TokenResult::Ok:
+            loginNeeded = false;
             return true;
         case TokenResult::InvalidGrant:
             // No token stored, or it was revoked/expired (30 days unused).
             Storage::clearRefreshToken();
-            return deviceCodeFlow();
+            if (!interactiveLogin) {
+                // Don't run the 5 min device code flow on every wake from
+                // sleep; nobody is watching the serial port then.
+                consolePrintf("tado: login required - reset the device with the serial "
+                              "monitor open to log in");
+                loginNeeded = true;
+                return false;
+            }
+            loginNeeded = !deviceCodeFlow();
+            return !loginNeeded;
         default:
             // Network/server error: keep the stored token and retry later.
             return false;
@@ -241,23 +265,25 @@ HttpResponse api(const char* method, const String& path, const String& jsonBody)
     return res;
 }
 
-bool setHeatingOff() {
+int setHeatingOff() {
     LOG("tado: setting zone %d heating OFF (manual, no timer)", TADO_ZONE_ID);
     const char* body =
         "{\"setting\":{\"type\":\"HEATING\",\"power\":\"OFF\"},"
         "\"termination\":{\"type\":\"MANUAL\"}}";
     HttpResponse res = api("PUT", overlayPath(), body);
-    if (res.status >= 200 && res.status < 300) return true;
-    LOG("tado: setting heating off failed (HTTP %d): %s", res.status, res.body.c_str());
-    return false;
+    if (!isSuccess(res.status)) {
+        LOG("tado: setting heating off failed (HTTP %d): %s", res.status, res.body.c_str());
+    }
+    return res.status;
 }
 
-bool resumeSchedule() {
+int resumeSchedule() {
     LOG("tado: resuming schedule in zone %d (removing overlay)", TADO_ZONE_ID);
     HttpResponse res = api("DELETE", overlayPath());
-    if (res.status >= 200 && res.status < 300) return true;
-    LOG("tado: resuming schedule failed (HTTP %d): %s", res.status, res.body.c_str());
-    return false;
+    if (!isSuccess(res.status)) {
+        LOG("tado: resuming schedule failed (HTTP %d): %s", res.status, res.body.c_str());
+    }
+    return res.status;
 }
 
 }  // namespace Tado

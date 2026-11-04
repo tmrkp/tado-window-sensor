@@ -21,9 +21,13 @@
 
 #define APP_MODE APP_MODE_SENSOR
 
-// 1: log diagnostics to the serial port. 0 for final deployment.
+// 1: log diagnostics to the serial port. Set per build environment in
+// platformio.ini: "cbu" (default) logs, "cbu_release" is silent, which also
+// silences LibreTiny's and the SDK's own output.
 // (The tado login URL is always printed, since it is needed for setup.)
+#ifndef DEBUG_LOG
 #define DEBUG_LOG 1
+#endif
 
 // ---- Behaviour
 
@@ -36,9 +40,15 @@
 #define CONFIRM_DELAY_MS 300
 #define CONFIRM_BLINK_MS 200
 
-// Failure: blink for this long.
+// Failure: blink for this long. Evenly (2 Hz) for a failed request, as a
+// double flash once per second if a new tado login is needed.
 #define ERROR_BLINK_MS 60000
 #define ERROR_BLINK_PERIOD_MS 500
+
+// After a failed request, retry after RETRY_MIN_MS, doubling on each further
+// failure up to RETRY_MAX_MS.
+#define RETRY_MIN_MS (5UL * 60 * 1000)
+#define RETRY_MAX_MS (60UL * 60 * 1000)
 
 // Timer wake to keep the tado refresh token alive (it expires after 30 days
 // unused) and to retry a failed request. The BK7231N RTC timer allows at most

@@ -1,1 +1,0 @@
-- platformio is installed using VS Code Extension

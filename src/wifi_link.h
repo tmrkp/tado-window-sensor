@@ -19,4 +19,7 @@ bool connectedFromCache();
 // disconnect, so the next connect() does a full DHCP connect.
 void invalidateCache();
 
+// Disconnect and switch the radio off (e.g. before a long LED signal).
+void off();
+
 }  // namespace Wifi

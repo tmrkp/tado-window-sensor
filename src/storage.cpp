@@ -11,6 +11,7 @@ constexpr const char* KEY_ACCESS = "tado_access";
 constexpr const char* KEY_ACCESS_EXP = "tado_access_exp";
 constexpr const char* KEY_SENT_STATE = "sent_state";
 constexpr const char* KEY_WIFI_CACHE = "wifi_cache";
+constexpr const char* KEY_FAIL_COUNT = "fail_count";
 // The access token is a JWT (~1-2 KB); leave headroom.
 constexpr size_t MAX_VALUE_LEN = 4096;
 
@@ -119,6 +120,16 @@ WindowState loadSentState() {
 bool saveSentState(WindowState state) {
     uint8_t value = (uint8_t)state;
     return setBlob(KEY_SENT_STATE, &value, sizeof(value));
+}
+
+uint8_t loadFailCount() {
+    uint8_t value = 0;
+    return getRaw(KEY_FAIL_COUNT, &value, sizeof(value)) ? value : 0;
+}
+
+bool saveFailCount(uint8_t count) {
+    if (loadFailCount() == count) return true;  // avoid needless flash writes
+    return setBlob(KEY_FAIL_COUNT, &count, sizeof(count));
 }
 
 bool loadWifiCache(WifiCache& cache) {

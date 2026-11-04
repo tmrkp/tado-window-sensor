@@ -128,4 +128,10 @@ void invalidateCache() {
     LOG("wifi: disconnected after %lu ms", (unsigned long)(millis() - start));
 }
 
+void off() {
+    if (WiFi.status() == WL_CONNECTED) LOG("wifi: switching off");
+    WiFi.disconnect(true);  // also disables the station interface
+    fromCache = false;
+}
+
 }  // namespace Wifi

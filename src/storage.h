@@ -24,6 +24,10 @@ enum class WindowState : uint8_t { Unknown = 0, Closed = 1, Open = 2 };
 WindowState loadSentState();
 bool saveSentState(WindowState state);
 
+// Consecutive failed attempts to apply the state (for retry backoff).
+uint8_t loadFailCount();
+bool saveFailCount(uint8_t count);
+
 // Access point and IP configuration from the last successful DHCP connect,
 // used to reconnect quickly (no scan, no DHCP).
 struct WifiCache {
