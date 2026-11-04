@@ -248,11 +248,11 @@ void loop() {}
 
 #elif APP_MODE == APP_MODE_HW_TEST
 
-// ---- Hardware test: button toggles the LED, reed switch changes are logged.
+// ---- Hardware test: the LED is lit while the magnet is near the reed switch.
+// Reed and button changes are logged.
 
 constexpr uint32_t DEBOUNCE_MS = 30;
 
-bool ledState = false;
 int buttonStable = HIGH;  // debounced level (HIGH = released)
 int buttonLastRead = HIGH;
 uint32_t buttonChangedAt = 0;
@@ -261,8 +261,8 @@ int reedLast = -1;
 void setup() {
     Serial.begin(115200);
     delay(500);
-    consolePrintf("Hardware test: press the button to toggle the LED,");
-    consolePrintf("move a magnet near the reed switch to see its state.");
+    consolePrintf("Hardware test: the LED lights while the magnet is near the reed switch;");
+    consolePrintf("reed and button changes are logged.");
 
     pinMode(PIN_LED, OUTPUT);
     digitalWrite(PIN_LED, LOW);
@@ -271,7 +271,16 @@ void setup() {
 }
 
 void loop() {
-    // Button: toggle on each debounced press (HIGH -> LOW).
+    // Reed switch: LOW = contact closed (magnet near) -> LED on.
+    int reed = digitalRead(PIN_REED);
+    if (reed != reedLast) {
+        reedLast = reed;
+        digitalWrite(PIN_LED, reed == LOW ? HIGH : LOW);
+        consolePrintf("Reed switch: %s", reed == LOW ? "closed (magnet near), LED on"
+                                                     : "open (no magnet), LED off");
+    }
+
+    // Button: log debounced presses and releases.
     int reading = digitalRead(PIN_BUTTON);
     if (reading != buttonLastRead) {
         buttonLastRead = reading;
@@ -279,18 +288,7 @@ void loop() {
     }
     if (reading != buttonStable && millis() - buttonChangedAt >= DEBOUNCE_MS) {
         buttonStable = reading;
-        if (buttonStable == LOW) {
-            ledState = !ledState;
-            digitalWrite(PIN_LED, ledState ? HIGH : LOW);
-            consolePrintf("Button pressed -> LED %s", ledState ? "ON" : "OFF");
-        }
-    }
-
-    // Reed switch: LOW = contact closed (magnet near).
-    int reed = digitalRead(PIN_REED);
-    if (reed != reedLast) {
-        reedLast = reed;
-        consolePrintf("Reed switch: %s", reed == LOW ? "closed (magnet near)" : "open (no magnet)");
+        consolePrintf("Button %s", buttonStable == LOW ? "pressed" : "released");
     }
 
     delay(5);

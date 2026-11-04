@@ -17,7 +17,7 @@
 // ---- Build mode
 
 #define APP_MODE_SENSOR 0   // window sensor application
-#define APP_MODE_HW_TEST 1  // button toggles LED, reed changes logged
+#define APP_MODE_HW_TEST 1  // LED lit while magnet near; reed/button logged
 
 #define APP_MODE APP_MODE_SENSOR
 
