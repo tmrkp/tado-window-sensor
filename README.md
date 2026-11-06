@@ -160,6 +160,10 @@ Remove the serial wires (or tuck them away), close the case, and mount the senso
 - Several sensors in the same zone are not coordinated: closing one window resumes the schedule even if another window in that zone is still open.
 - This firmware uses tado's unofficial API, which can change or be rate-limited at any time.
 
+## License
+
+[MIT](LICENSE)
+
 ## Disclaimer
 
 This project is not affiliated with tado GmbH or Tuya. Opening and modifying the device voids its warranty. Use at your own risk.
